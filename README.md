@@ -56,5 +56,10 @@ This allows you to see trends in your focus at a glance, not just volume.
  * Backend: Go (Golang)
  * Database: SQLite (modernc.org/sqlite - CGO free)
  * Frontend: HTML5 + Apache ECharts
+
+
 License
 GPLv3 © Tomer Barak
+
+
+
