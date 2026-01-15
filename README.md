@@ -2,8 +2,9 @@
 
 **A self-hosted, privacy-first server to visualize your life as a contribution heatmap.**
 
-![Screenshot of Open Contribution Graph Dashboard](https://via.placeholder.com/800x250.png?text=Imagine+Your+Green+Squares+Here)
-*(Replace this image with a real screenshot before launching!)*
+![Combined Dashboard View](docs/screenshot.png)
+
+*Track coding, fitness, reading, meditation, and more — all in one beautiful dashboard.*
 
 ## ⚡ What is this?
 GitHub tracks your code, but what about the rest of your work?
@@ -15,6 +16,27 @@ It is **not** a time tracker. It is an **Event Tracker**. It answers the questio
 * **Universal:** If you can send a POST request, you can track it.
 * **Private:** Self-hosted single binary (Go + SQLite). Your data stays on your machine.
 * **Fast:** Compiles to a ~10MB executable. Zero runtime dependencies.
+
+## ✨ Features
+
+### Per-Source Contribution Graphs
+Switch between different event types to analyze your habits individually:
+
+| Git Commits | Fitness |
+|:-----------:|:-------:|
+| ![Git Commits](docs/screenshot-git.png) | ![Fitness](docs/screenshot-fitness.png) |
+
+### Combine Modes
+When viewing all sources together, choose how colors are blended:
+- **Winner Takes All** — The dominant source for each day determines the color
+- **Blend Colors** — Mix colors proportionally based on contribution ratios
+- **Stack** — Use intensity based on total contributions
+
+### Dynamic Statistics
+- Total contributions (overall or per-source)
+- Today's activity count
+- Current streak tracking
+- Active source count
 
 ## 🏗 Architecture
 The system uses a simple "Hub and Spoke" model. You run the server (Hub), and "Agents" (Spokes) push data to it.
@@ -30,7 +52,7 @@ Up and running in 30 seconds.
 
 ```bash
 # 1. Clone the repo
-git clone [https://github.com/Tomer-Barak/contribution-graph.git](https://github.com/Tomer-Barak/contribution-graph.git)
+git clone https://github.com/Tomer-Barak/contribution-graph.git
 cd contribution-graph
 
 # 2. Start the server
@@ -68,13 +90,17 @@ We include several reference implementations to get you started:
 * **`github-import` (Go):** Backfills your graph using your public GitHub history.
 * **`mobile-clicker` (HTML/PWA):** A mobile-web app to manually log habits (Reading, Meditating, etc.) from your phone.
 
-## 🎨 Visualization Logic
-The graph uses a **"Dominant Source"** coloring engine.
-* If you coded the most today, the cell is **Green**.
-* If you did more project management, the cell is **Blue**.
-* If you focused on fitness, the cell is **Orange**.
+## 🎨 Source Color Scheme
+Each source type has its own distinct color:
 
-This allows you to see *trends in your focus* at a glance, not just volume.
+| Source | Color |
+|--------|-------|
+| Git / GitHub | 🟢 Green |
+| Jira | 🔵 Blue |
+| Fitness | 🟠 Orange |
+| Reading | 🟡 Yellow |
+| Meditation | 🟣 Purple |
+| Learning | 💗 Pink |
 
 ## 🛠 Tech Stack
 * **Backend:** Go (Golang)

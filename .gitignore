@@ -1,0 +1,25 @@
+# Binaries
+/server
+/git-watch
+/github-import
+*.exe
+
+# Database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+/vendor/

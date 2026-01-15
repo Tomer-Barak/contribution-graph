@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Contribution Graph</title>
+    <meta name="description"
+        content="Personal contribution tracker - visualize your coding, fitness, reading, and productivity activities across all platforms">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #21262d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --border: #30363d;
+            --green: #238636;
+            --blue: #3b82f6;
+            --orange: #f97316;
+            --yellow: #eab308;
+            --purple: #a855f7;
+            --pink: #ec4899;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #238636, #58a6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Source Selector Tabs */
+        .source-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            animation: fadeIn 0.4s ease-out 0.1s both;
+        }
+
+        .source-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .source-tab::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .source-tab:hover {
+            color: var(--text);
+            background: var(--bg3);
+        }
+
+        .source-tab.active {
+            color: var(--text);
+            background: var(--bg3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .source-tab .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .source-tab .count {
+            background: var(--bg);
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.25rem;
+        }
+
+        /* Stats Grid */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.4s ease-out 0.2s both;
+        }
+
+        .stat {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--green), var(--blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat:hover {
+            transform: translateY(-2px);
+            border-color: var(--muted);
+        }
+
+        .stat:hover::before {
+            opacity: 1;
+        }
+
+        .stat-val {
+            font-size: 1.85rem;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        .stat-val.counting {
+            animation: pulse 0.3s ease;
+        }
+
+        .stat-lbl {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        /* Graph Container */
+        .graph-box {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            animation: fadeIn 0.4s ease-out 0.3s both;
+        }
+
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .graph-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .graph-title h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .graph-title .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            background: var(--bg3);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .graph-title .source-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        select {
+            background: var(--bg3);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select:hover {
+            border-color: var(--muted);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--green);
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        label:hover {
+            color: var(--text);
+        }
+
+        #heatmap {
+            width: 100%;
+            height: 180px;
+            transition: opacity 0.3s ease;
+        }
+
+        #heatmap.loading {
+            opacity: 0.5;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .legend-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        footer a {
+            color: #58a6ff;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .source-tabs {
+                gap: 0.35rem;
+            }
+
+            .source-tab {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .source-tab .count {
+                display: none;
+            }
+
+            .graph-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Open Contribution Graph</h1>
+
+        <!-- Source Type Tabs -->
+        <div class="source-tabs" id="sourceTabs">
+            <button class="source-tab active" data-source="combined">
+                <span class="indicator" style="background: linear-gradient(135deg, var(--green), var(--blue))"></span>
+                Combined
+            </button>
+            <!-- Dynamic tabs will be added here -->
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-val" id="total">-</div>
+                <div class="stat-lbl">Total</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val" id="today" style="color:#238636">-</div>
+                <div class="stat-lbl">Today</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val" id="streak" style="color:#f97316">-</div>
+                <div class="stat-lbl">🔥 Streak</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val" id="sources">-</div>
+                <div class="stat-lbl">Sources</div>
+            </div>
+        </div>
+
+        <div class="graph-box">
+            <div class="graph-header">
+                <div class="graph-title">
+                    <h2>Activity</h2>
+                    <span class="source-badge" id="sourceBadge">
+                        <span class="dot" style="background: linear-gradient(135deg, var(--green), var(--blue))"></span>
+                        All Sources
+                    </span>
+                </div>
+                <div class="header-controls">
+                    <select id="combineMode" title="How to combine sources">
+                        <option value="winner">Winner Takes All</option>
+                        <option value="blend">Blend Colors</option>
+                        <option value="stack">Stack (Sum)</option>
+                    </select>
+                    <select id="year"></select>
+                </div>
+            </div>
+            <div id="heatmap"></div>
+            <div class="legend" id="legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background:#161b22"></div>None
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background:rgba(35,134,54,0.4)"></div>Low
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background:rgba(35,134,54,0.7)"></div>Med
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background:#238636"></div>High
+                </div>
+            </div>
+        </div>
+
+        <footer><a href="/mobile.html">📱 Mobile Logger</a> · <a
+                href="https://github.com/Tomer-Barak/contribution-graph">GitHub</a></footer>
+    </div>
+
+    <script>
+        // Source color schemes
+        const sourceColors = {
+            'git': { rgb: '35,134,54', hex: '#238636', name: 'Git Commits' },
+            'github-import': { rgb: '35,134,54', hex: '#238636', name: 'GitHub' },
+            'jira': { rgb: '59,130,246', hex: '#3b82f6', name: 'Jira' },
+            'fitness': { rgb: '249,115,22', hex: '#f97316', name: 'Fitness' },
+            'reading': { rgb: '234,179,8', hex: '#eab308', name: 'Reading' },
+            'meditation': { rgb: '168,85,247', hex: '#a855f7', name: 'Meditation' },
+            'learning': { rgb: '236,72,153', hex: '#ec4899', name: 'Learning' },
+            'default': { rgb: '139,148,158', hex: '#8b949e', name: 'Other' }
+        };
+
+        let chart, year = new Date().getFullYear();
+        let currentSource = 'combined';
+        let allData = [];
+        let statsData = {};
+
+        async function init() {
+            // Populate year selector
+            const yearSel = document.getElementById('year');
+            for (let y = year; y >= year - 5; y--) {
+                yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+            yearSel.onchange = () => { year = parseInt(yearSel.value); loadGraph(); };
+
+            // Combine mode selector
+            document.getElementById('combineMode').onchange = () => loadGraph();
+
+            // Initial load
+            await loadStats();
+            await loadData();
+            buildSourceTabs();
+            loadGraph();
+        }
+
+        async function loadStats() {
+            const res = await fetch('/api/stats');
+            statsData = await res.json();
+            updateStatsDisplay();
+        }
+
+        function updateStatsDisplay() {
+            const source = currentSource;
+
+            if (source === 'combined') {
+                animateValue('total', statsData.total || 0);
+                animateValue('today', statsData.today || 0);
+                animateValue('streak', statsData.current_streak || 0);
+                animateValue('sources', Object.keys(statsData.by_source || {}).length);
+            } else {
+                // Calculate stats for specific source
+                const sourceContribs = allData.filter(c => c.source === source);
+                const today = new Date().toISOString().split('T')[0];
+                const todayCount = sourceContribs.filter(c => c.timestamp.startsWith(today)).length;
+
+                animateValue('total', (statsData.by_source || {})[source] || 0);
+                animateValue('today', todayCount);
+                animateValue('streak', calculateSourceStreak(sourceContribs));
+                animateValue('sources', 1);
+            }
+        }
+
+        function animateValue(id, newValue) {
+            const el = document.getElementById(id);
+            const current = parseInt(el.textContent) || 0;
+
+            if (current === newValue) return;
+
+            el.classList.add('counting');
+
+            const duration = 300;
+            const steps = 10;
+            const stepTime = duration / steps;
+            const stepVal = (newValue - current) / steps;
+
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                if (step >= steps) {
+                    el.textContent = newValue;
+                    el.classList.remove('counting');
+                    clearInterval(interval);
+                } else {
+                    el.textContent = Math.round(current + stepVal * step);
+                }
+            }, stepTime);
+        }
+
+        function calculateSourceStreak(contributions) {
+            const days = new Set();
+            contributions.forEach(c => {
+                days.add(c.timestamp.split('T')[0]);
+            });
+
+            const sortedDays = Array.from(days).sort().reverse();
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < sortedDays.length; i++) {
+                const dayDate = new Date(sortedDays[i]);
+                dayDate.setHours(0, 0, 0, 0);
+
+                const expectedDate = new Date(today);
+                expectedDate.setDate(today.getDate() - streak);
+
+                // Allow for today or yesterday to start streak
+                const diff = Math.floor((today - dayDate) / (24 * 60 * 60 * 1000));
+                if (i === 0 && diff > 1) break;
+                if (i > 0 && diff !== streak) break;
+
+                streak++;
+            }
+
+            return streak;
+        }
+
+        async function loadData() {
+            const res = await fetch(`/api/contributions?year=${year}`);
+            allData = await res.json() || [];
+        }
+
+        function buildSourceTabs() {
+            const tabsContainer = document.getElementById('sourceTabs');
+            const sources = {};
+
+            allData.forEach(c => {
+                if (!sources[c.source]) sources[c.source] = 0;
+                sources[c.source]++;
+            });
+
+            // Keep the Combined tab
+            tabsContainer.innerHTML = `
+        <button class="source-tab active" data-source="combined">
+            <span class="indicator" style="background: linear-gradient(135deg, var(--green), var(--blue))"></span>
+            Combined
+            <span class="count">${allData.length}</span>
+        </button>
+    `;
+
+            // Add individual source tabs
+            Object.entries(sources)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([source, count]) => {
+                    const color = sourceColors[source] || sourceColors.default;
+                    const btn = document.createElement('button');
+                    btn.className = 'source-tab';
+                    btn.dataset.source = source;
+                    btn.innerHTML = `
+                <span class="indicator" style="background: ${color.hex}"></span>
+                ${color.name || source}
+                <span class="count">${count}</span>
+            `;
+                    tabsContainer.appendChild(btn);
+                });
+
+            // Attach click handlers
+            tabsContainer.querySelectorAll('.source-tab').forEach(btn => {
+                btn.onclick = () => selectSource(btn.dataset.source);
+            });
+        }
+
+        function selectSource(source) {
+            currentSource = source;
+
+            // Update active tab
+            document.querySelectorAll('.source-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.source === source);
+            });
+
+            // Update badge
+            const badge = document.getElementById('sourceBadge');
+            const combineMode = document.getElementById('combineMode');
+
+            if (source === 'combined') {
+                badge.innerHTML = `<span class="dot" style="background: linear-gradient(135deg, var(--green), var(--blue))"></span>All Sources`;
+                combineMode.style.display = 'block';
+            } else {
+                const color = sourceColors[source] || sourceColors.default;
+                badge.innerHTML = `<span class="dot" style="background: ${color.hex}"></span>${color.name || source}`;
+                combineMode.style.display = 'none';
+            }
+
+            updateStatsDisplay();
+            loadGraph();
+            updateLegend();
+        }
+
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+            const color = currentSource === 'combined'
+                ? sourceColors.git
+                : (sourceColors[currentSource] || sourceColors.default);
+
+            legend.innerHTML = `
+        <div class="legend-item"><div class="legend-box" style="background:#161b22"></div>None</div>
+        <div class="legend-item"><div class="legend-box" style="background:rgba(${color.rgb},0.4)"></div>Low</div>
+        <div class="legend-item"><div class="legend-box" style="background:rgba(${color.rgb},0.7)"></div>Med</div>
+        <div class="legend-item"><div class="legend-box" style="background:${color.hex}"></div>High</div>
+    `;
+        }
+
+        function loadGraph() {
+            const heatmapEl = document.getElementById('heatmap');
+            heatmapEl.classList.add('loading');
+
+            const filteredData = currentSource === 'combined'
+                ? allData
+                : allData.filter(c => c.source === currentSource);
+
+            const days = {};
+            filteredData.forEach(item => {
+                const dt = item.timestamp.split('T')[0];
+                if (!days[dt]) days[dt] = { total: 0, src: {} };
+                days[dt].total++;
+                days[dt].src[item.source] = (days[dt].src[item.source] || 0) + 1;
+            });
+
+            const combineMode = document.getElementById('combineMode').value;
+
+            const chartData = Object.entries(days).map(([date, stats]) => {
+                let color;
+
+                if (currentSource === 'combined') {
+                    color = getCombinedColor(stats, combineMode);
+                } else {
+                    const srcColor = sourceColors[currentSource] || sourceColors.default;
+                    const opacity = Math.min(1, Math.max(0.35, stats.total / 8));
+                    color = `rgba(${srcColor.rgb}, ${opacity})`;
+                }
+
+                return {
+                    value: [date, stats.total],
+                    itemStyle: {
+                        color: color,
+                        borderColor: '#0d1117',
+                        borderWidth: 2,
+                        borderRadius: 2
+                    }
+                };
+            });
+
+            if (!chart) {
+                chart = echarts.init(heatmapEl, 'dark');
+            }
+
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    formatter: p => {
+                        const date = p.data.value[0];
+                        const count = p.data.value[1];
+                        const dayStats = days[date];
+
+                        let tooltip = `<b>${date}</b><br/>`;
+                        tooltip += `${count} contribution${count !== 1 ? 's' : ''}`;
+
+                        if (currentSource === 'combined' && dayStats) {
+                            tooltip += '<br/><br/>';
+                            Object.entries(dayStats.src)
+                                .sort((a, b) => b[1] - a[1])
+                                .forEach(([src, cnt]) => {
+                                    const srcInfo = sourceColors[src] || sourceColors.default;
+                                    tooltip += `<span style="color:${srcInfo.hex}">●</span> ${srcInfo.name || src}: ${cnt}<br/>`;
+                                });
+                        }
+
+                        return tooltip;
+                    }
+                },
+                calendar: {
+                    top: 20,
+                    left: 40,
+                    right: 20,
+                    cellSize: ['auto', 13],
+                    range: year.toString(),
+                    itemStyle: { color: '#161b22', borderColor: '#0d1117', borderWidth: 2 },
+                    splitLine: { show: false },
+                    yearLabel: { show: false },
+                    dayLabel: { color: '#8b949e', nameMap: ['', 'M', '', 'W', '', 'F', ''] },
+                    monthLabel: { color: '#8b949e' }
+                },
+                series: {
+                    type: 'heatmap',
+                    coordinateSystem: 'calendar',
+                    data: chartData
+                }
+            }, true);
+
+            setTimeout(() => heatmapEl.classList.remove('loading'), 150);
+        }
+
+        function getCombinedColor(stats, mode) {
+            const sources = Object.entries(stats.src);
+
+            if (mode === 'winner') {
+                // Winner takes all
+                let winner = 'default', max = 0;
+                sources.forEach(([src, count]) => {
+                    if (count > max) { max = count; winner = src; }
+                });
+                const srcColor = sourceColors[winner] || sourceColors.default;
+                const opacity = Math.min(1, Math.max(0.35, stats.total / 10));
+                return `rgba(${srcColor.rgb}, ${opacity})`;
+            }
+            else if (mode === 'blend') {
+                // Blend colors based on contribution ratio
+                let r = 0, g = 0, b = 0;
+                sources.forEach(([src, count]) => {
+                    const srcColor = sourceColors[src] || sourceColors.default;
+                    const rgb = srcColor.rgb.split(',').map(Number);
+                    const weight = count / stats.total;
+                    r += rgb[0] * weight;
+                    g += rgb[1] * weight;
+                    b += rgb[2] * weight;
+                });
+                const opacity = Math.min(1, Math.max(0.35, stats.total / 10));
+                return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)}, ${opacity})`;
+            }
+            else if (mode === 'stack') {
+                // Stack: more intense for higher totals
+                const srcColor = sourceColors.git; // Use primary color
+                const opacity = Math.min(1, Math.max(0.25, stats.total / 15));
+                return `rgba(${srcColor.rgb}, ${opacity})`;
+            }
+
+            return 'rgba(139,148,158, 0.5)';
+        }
+
+        window.onresize = () => chart && chart.resize();
+
+        // Auto-refresh every 30 seconds
+        setInterval(async () => {
+            await loadData();
+            await loadStats();
+            buildSourceTabs();
+            loadGraph();
+        }, 30000);
+
+        init();
+    </script>
+</body>
+
+</html>

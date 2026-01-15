@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0d1117">
+    <title>Logger</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d1117;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .btn span {
+            font-size: 2rem;
+        }
+
+        .btn-fitness {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+
+        .btn-reading {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+        }
+
+        .btn-code {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .btn-focus {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .btn-meditation {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+        }
+
+        .btn-learning {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+
+        #toast {
+            visibility: hidden;
+            background: #238636;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 12px 24px;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 600;
+            z-index: 100;
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fade 3s;
+        }
+
+        @keyframes fade {
+
+            0%,
+            100% {
+                opacity: 0;
+            }
+
+            10%,
+            90% {
+                opacity: 1;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .footer a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Log Event</h1>
+    <div class="grid">
+        <button class="btn btn-fitness" onclick="log('fitness','workout')"><span>🏃</span>Fitness</button>
+        <button class="btn btn-reading" onclick="log('reading','book')"><span>📚</span>Reading</button>
+        <button class="btn btn-focus" onclick="log('focus','deep-work')"><span>🧠</span>Focus</button>
+        <button class="btn btn-code" onclick="log('git','idea')"><span>💡</span>Idea</button>
+        <button class="btn btn-meditation" onclick="log('meditation','session')"><span>🧘</span>Meditate</button>
+        <button class="btn btn-learning" onclick="log('learning','lesson')"><span>🎓</span>Learning</button>
+    </div>
+    <div class="footer"><a href="/">← Dashboard</a></div>
+    <div id="toast">✅ Logged!</div>
+    <script>
+        function log(source, context) {
+            if (navigator.vibrate) navigator.vibrate(50);
+            fetch('/api/contributions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify([{ source, context, timestamp: new Date().toISOString(), metadata: { device: 'mobile' } }])
+            }).then(r => { if (r.ok) toast(); }).catch(() => alert('Connection error'));
+        }
+        function toast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+
+</html>
