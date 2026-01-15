@@ -1,6 +1,8 @@
 # Binaries
+/contribution-graph-server
 /server
 /git-watch
+agents/git-watch/git-watch
 /github-import
 *.exe
 
@@ -23,3 +25,9 @@ Thumbs.db
 
 # Go
 /vendor/
+
+.env
+
+*.service
+*.timer
+agents/github-import/github-import

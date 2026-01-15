@@ -4,9 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Contribution Graph</title>
+    <meta name="theme-color" content="#0d1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Contribution Graph</title>
     <meta name="description"
         content="Personal contribution tracker - visualize your coding, fitness, reading, and productivity activities across all platforms">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -358,7 +365,11 @@
         /* Responsive */
         @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: 0.5rem;
+            }
+
+            .container {
+                max-width: 100%;
             }
 
             .stats {
@@ -377,9 +388,22 @@
                 padding: 0.5rem 0.8rem;
                 font-size: 0.8rem;
             }
+
+            .graph-box {
+                padding: 0.75rem;
+                border-radius: 12px;
+            }
+
+            #heatmap {
+                height: 160px;
+            }
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 0.25rem;
+            }
+
             .source-tab .count {
                 display: none;
             }
@@ -387,6 +411,15 @@
             .graph-header {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            .graph-box {
+                padding: 0.5rem;
+                border-radius: 8px;
+            }
+
+            #heatmap {
+                height: 140px;
             }
         }
     </style>
@@ -403,25 +436,6 @@
                 Combined
             </button>
             <!-- Dynamic tabs will be added here -->
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-val" id="total">-</div>
-                <div class="stat-lbl">Total</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val" id="today" style="color:#238636">-</div>
-                <div class="stat-lbl">Today</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val" id="streak" style="color:#f97316">-</div>
-                <div class="stat-lbl">🔥 Streak</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val" id="sources">-</div>
-                <div class="stat-lbl">Sources</div>
-            </div>
         </div>
 
         <div class="graph-box">
@@ -468,35 +482,58 @@
         const sourceColors = {
             'git': { rgb: '35,134,54', hex: '#238636', name: 'Git Commits' },
             'github-import': { rgb: '35,134,54', hex: '#238636', name: 'GitHub' },
-            'jira': { rgb: '59,130,246', hex: '#3b82f6', name: 'Jira' },
-            'fitness': { rgb: '249,115,22', hex: '#f97316', name: 'Fitness' },
-            'reading': { rgb: '234,179,8', hex: '#eab308', name: 'Reading' },
-            'meditation': { rgb: '168,85,247', hex: '#a855f7', name: 'Meditation' },
-            'learning': { rgb: '236,72,153', hex: '#ec4899', name: 'Learning' },
+            'coffee': { rgb: '139,69,19', hex: '#8B4513', name: 'Coffee' },
             'default': { rgb: '139,148,158', hex: '#8b949e', name: 'Other' }
         };
 
-        let chart, year = new Date().getFullYear();
-        let currentSource = 'combined';
+        let chart;
+        const savedYear = localStorage.getItem('dashboard_year');
+        let year = savedYear ? parseInt(savedYear) : new Date().getFullYear();
+
+        const savedSource = localStorage.getItem('dashboard_source');
+        let currentSource = savedSource || 'combined';
         let allData = [];
         let statsData = {};
 
         async function init() {
             // Populate year selector
             const yearSel = document.getElementById('year');
-            for (let y = year; y >= year - 5; y--) {
-                yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= currentYear - 5; y--) {
+                yearSel.innerHTML += `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`;
             }
-            yearSel.onchange = () => { year = parseInt(yearSel.value); loadGraph(); };
+
+            yearSel.onchange = async () => {
+                year = parseInt(yearSel.value);
+                localStorage.setItem('dashboard_year', year);
+                yearSel.disabled = true;
+                document.getElementById('heatmap').classList.add('loading');
+                try {
+                    await loadData();
+                    buildSourceTabs();
+                    selectSource(currentSource);
+                } finally {
+                    yearSel.disabled = false;
+                }
+            };
 
             // Combine mode selector
-            document.getElementById('combineMode').onchange = () => loadGraph();
+            const combineModeSel = document.getElementById('combineMode');
+            const savedCombineMode = localStorage.getItem('dashboard_combine_mode');
+            if (savedCombineMode) {
+                combineModeSel.value = savedCombineMode;
+            }
+
+            combineModeSel.onchange = () => {
+                localStorage.setItem('dashboard_combine_mode', combineModeSel.value);
+                loadGraph();
+            };
 
             // Initial load
             await loadStats();
             await loadData();
             buildSourceTabs();
-            loadGraph();
+            selectSource(currentSource);
         }
 
         async function loadStats() {
@@ -528,6 +565,7 @@
 
         function animateValue(id, newValue) {
             const el = document.getElementById(id);
+            if (!el) return; // Element may not exist if stats cards are removed
             const current = parseInt(el.textContent) || 0;
 
             if (current === newValue) return;
@@ -628,6 +666,7 @@
 
         function selectSource(source) {
             currentSource = source;
+            localStorage.setItem('dashboard_source', source);
 
             // Update active tab
             document.querySelectorAll('.source-tab').forEach(tab => {
@@ -700,7 +739,7 @@
                     itemStyle: {
                         color: color,
                         borderColor: '#0d1117',
-                        borderWidth: 2,
+                        borderWidth: 1,
                         borderRadius: 2
                     }
                 };
@@ -736,15 +775,15 @@
                 },
                 calendar: {
                     top: 20,
-                    left: 40,
-                    right: 20,
-                    cellSize: ['auto', 13],
+                    left: window.innerWidth < 480 ? 25 : 40,
+                    right: window.innerWidth < 480 ? 5 : 20,
+                    cellSize: ['auto', window.innerWidth < 480 ? 11 : 13],
                     range: year.toString(),
-                    itemStyle: { color: '#161b22', borderColor: '#0d1117', borderWidth: 2 },
+                    itemStyle: { color: '#161b22', borderColor: '#0d1117', borderWidth: 1 },
                     splitLine: { show: false },
                     yearLabel: { show: false },
                     dayLabel: { color: '#8b949e', nameMap: ['', 'M', '', 'W', '', 'F', ''] },
-                    monthLabel: { color: '#8b949e' }
+                    monthLabel: { color: '#8b949e', fontSize: window.innerWidth < 480 ? 10 : 12 }
                 },
                 series: {
                     type: 'heatmap',

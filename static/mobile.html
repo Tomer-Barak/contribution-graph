@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#0d1117">
     <title>Logger</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <style>
         * {
             margin: 0;
@@ -21,16 +22,37 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
         }
 
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
         h1 {
             font-size: 1.25rem;
-            text-align: center;
+            color: #e6edf3;
+        }
+
+        .edit-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
             color: #8b949e;
-            margin-bottom: 1rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .edit-btn.active {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
         }
 
         .grid {
@@ -38,11 +60,13 @@
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             flex: 1;
+            align-content: start;
         }
 
         .btn {
             border: none;
             border-radius: 16px;
+            padding: 24px 16px;
             font-size: 1rem;
             font-weight: 600;
             color: #fff;
@@ -52,8 +76,9 @@
             justify-content: center;
             gap: 8px;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: transform 0.1s, opacity 0.2s;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
         }
 
         .btn:active {
@@ -61,32 +86,163 @@
             opacity: 0.8;
         }
 
-        .btn span {
+        .btn .emoji {
             font-size: 2rem;
         }
 
-        .btn-fitness {
-            background: linear-gradient(135deg, #f97316, #ea580c);
+        .btn .delete-badge {
+            display: none;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f85149;
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            align-items: center;
+            justify-content: center;
         }
 
-        .btn-reading {
-            background: linear-gradient(135deg, #fbbf24, #d97706);
+        .editing .btn .delete-badge {
+            display: flex;
         }
 
-        .btn-code {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
+        .editing .btn:active {
+            transform: none;
         }
 
-        .btn-focus {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        .add-btn {
+            background: #21262d;
+            border: 2px dashed #30363d;
+            color: #8b949e;
         }
 
-        .btn-meditation {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
+        .add-btn .emoji {
+            font-size: 2rem;
         }
 
-        .btn-learning {
-            background: linear-gradient(135deg, #ec4899, #db2777);
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .modal h2 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #e6edf3;
+        }
+
+        .modal input,
+        .modal select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #0d1117;
+            color: #e6edf3;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+
+        .modal input:focus,
+        .modal select:focus {
+            outline: none;
+            border-color: #238636;
+        }
+
+        .modal label {
+            display: block;
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .emoji-picker {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .emoji-option {
+            font-size: 1.5rem;
+            padding: 8px;
+            text-align: center;
+            background: #21262d;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .emoji-option.selected {
+            border-color: #238636;
+            background: #238636;
+        }
+
+        .color-picker {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .color-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-option.selected {
+            border-color: #fff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: #21262d;
+            color: #8b949e;
+        }
+
+        .btn-save {
+            background: #238636;
+            color: #fff;
         }
 
         #toast {
@@ -106,11 +262,12 @@
 
         #toast.show {
             visibility: visible;
-            animation: fade 3s;
+            animation: fade 2s;
         }
 
         @keyframes fade {
 
+            0%,
             0%,
             100% {
                 opacity: 0;
@@ -122,9 +279,20 @@
             }
         }
 
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         .footer {
             text-align: center;
             margin-top: 1rem;
+            padding: 8px 0;
         }
 
         .footer a {
@@ -136,31 +304,289 @@
 </head>
 
 <body>
-    <h1>Log Event</h1>
-    <div class="grid">
-        <button class="btn btn-fitness" onclick="log('fitness','workout')"><span>🏃</span>Fitness</button>
-        <button class="btn btn-reading" onclick="log('reading','book')"><span>📚</span>Reading</button>
-        <button class="btn btn-focus" onclick="log('focus','deep-work')"><span>🧠</span>Focus</button>
-        <button class="btn btn-code" onclick="log('git','idea')"><span>💡</span>Idea</button>
-        <button class="btn btn-meditation" onclick="log('meditation','session')"><span>🧘</span>Meditate</button>
-        <button class="btn btn-learning" onclick="log('learning','lesson')"><span>🎓</span>Learning</button>
+    <div class="header">
+        <h1>Log Event</h1>
+        <div style="display: flex; gap: 8px;">
+            <button class="edit-btn" onclick="syncWithServer()" title="Sync with server">↻</button>
+            <button class="edit-btn" onclick="toggleEdit()">Edit</button>
+        </div>
     </div>
+    <div class="grid" id="grid"></div>
     <div class="footer"><a href="/">← Dashboard</a></div>
     <div id="toast">✅ Logged!</div>
+    <div id="sync-toast"
+        style="visibility: hidden; background: #3b82f6; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); font-weight: 600; z-index: 100;">
+        ↻ Synced!</div>
+
+    <!-- Add Event Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2>Add Event Type</h2>
+            <label>Name</label>
+            <input type="text" id="eventName" placeholder="e.g., Exercise">
+            <label>Source ID</label>
+            <input type="text" id="eventSource" placeholder="e.g., exercise">
+            <label>Emoji</label>
+            <div class="emoji-picker" id="emojiPicker"></div>
+            <label>Color</label>
+            <div class="color-picker" id="colorPicker"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEvent()">Add</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Known presets for auto-discovery
+        const presets = {
+            'git': { name: 'Git', emoji: '💻', color: '#238636' },
+            'github-import': { name: 'GitHub', emoji: '🐙', color: '#238636' },
+            'coffee': { name: 'Coffee', emoji: '☕', color: '#8B4513' },
+            'fitness': { name: 'Fitness', emoji: '🏃', color: '#f97316' },
+            'reading': { name: 'Reading', emoji: '📚', color: '#eab308' },
+            'meditation': { name: 'Meditate', emoji: '🧘', color: '#a855f7' },
+            'learning': { name: 'Learning', emoji: '🎓', color: '#ec4899' },
+            'focus': { name: 'Focus', emoji: '🧠', color: '#3b82f6' }
+        };
+
+        // Default event types (fallback)
+        const defaultEvents = [
+            { id: 'coffee', name: 'Coffee', emoji: '☕', color: '#8B4513', context: 'manual' }
+        ];
+
+        // Available emojis
+        const emojis = ['☕', '🏃', '📚', '🧠', '💡', '🧘', '🎓', '💪', '🎯', '✍️', '🎵', '🌱', '💻', '🐙', '📱'];
+
+        // Available colors
+        const colors = [
+            '#8B4513', '#238636', '#f97316', '#eab308',
+            '#3b82f6', '#a855f7', '#ec4899', '#ef4444',
+            '#14b8a6', '#6366f1', '#84cc16', '#f59e0b'
+        ];
+
+        let isEditing = false;
+        let selectedEmoji = emojis[0];
+        let selectedColor = colors[0];
+
+        // Load events from localStorage or use defaults
+        function loadEvents() {
+            const saved = localStorage.getItem('loggerEvents');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return defaultEvents;
+        }
+
+        // Save events to localStorage
+        function saveEvents(events) {
+            localStorage.setItem('loggerEvents', JSON.stringify(events));
+        }
+
+        // Sync with server sources
+        async function syncWithServer() {
+            const btn = document.querySelector('button[title="Sync with server"]');
+            btn.style.animation = 'spin 1s linear infinite';
+
+            try {
+                const res = await fetch('/api/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const stats = await res.json();
+
+                const serverSources = Object.keys(stats.by_source || {});
+                const localEvents = loadEvents();
+                let changed = false;
+
+                // Add missing sources from server
+                serverSources.forEach(source => {
+                    if (!localEvents.find(e => e.id === source)) {
+                        const preset = presets[source] || {
+                            name: source.charAt(0).toUpperCase() + source.slice(1),
+                            emoji: '📱',
+                            color: '#8b949e'
+                        };
+
+                        localEvents.push({
+                            id: source,
+                            name: preset.name,
+                            emoji: preset.emoji,
+                            color: preset.color,
+                            context: 'manual'
+                        });
+                        changed = true;
+                    }
+                });
+
+                if (changed) {
+                    saveEvents(localEvents);
+                    render();
+                }
+
+                // Show sync toast
+                const t = document.getElementById('sync-toast');
+                t.style.visibility = 'visible';
+                t.style.animation = 'fade 2s forwards';
+                setTimeout(() => t.style.visibility = 'hidden', 2000);
+
+            } catch (e) {
+                console.error('Sync failed:', e);
+                alert('Sync failed: Could not reach server');
+            } finally {
+                btn.style.animation = 'none';
+            }
+        }
+
+        // Render the event buttons
+        function render() {
+            const grid = document.getElementById('grid');
+            const events = loadEvents();
+
+            grid.innerHTML = events.map((e, i) => `
+                <button class="btn" style="background: linear-gradient(135deg, ${e.color}, ${adjustColor(e.color, -20)})"
+                        onclick="${isEditing ? `deleteEvent(${i})` : `log('${e.id}', '${e.context || 'manual'}')`}">
+                    <span class="delete-badge">×</span>
+                    <span class="emoji">${e.emoji}</span>
+                    ${e.name}
+                </button>
+            `).join('');
+
+            // Add the "+" button when editing
+            if (isEditing) {
+                grid.innerHTML += `
+                    <button class="btn add-btn" onclick="openModal()">
+                        <span class="emoji">+</span>
+                        Add New
+                    </button>
+                `;
+            }
+
+            document.body.classList.toggle('editing', isEditing);
+        }
+
+        // Adjust color brightness
+        function adjustColor(hex, percent) {
+            const num = parseInt(hex.slice(1), 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+            return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+        }
+
+        // Toggle edit mode
+        function toggleEdit() {
+            isEditing = !isEditing;
+            const btn = document.querySelectorAll('.edit-btn')[1]; // The second button is Edit
+            btn.classList.toggle('active', isEditing);
+            btn.textContent = isEditing ? 'Done' : 'Edit';
+            render();
+        }
+
+        // Delete an event
+        function deleteEvent(index) {
+            if (confirm('Delete this event type?')) {
+                const events = loadEvents();
+                events.splice(index, 1);
+                saveEvents(events);
+                render();
+            }
+        }
+
+        // Open add modal
+        function openModal() {
+            document.getElementById('modal').classList.add('show');
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventSource').value = '';
+            renderEmojiPicker();
+            renderColorPicker();
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        // Render emoji picker
+        function renderEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.innerHTML = emojis.map(e => `
+                <div class="emoji-option ${e === selectedEmoji ? 'selected' : ''}" 
+                     onclick="selectEmoji('${e}')">${e}</div>
+            `).join('');
+        }
+
+        // Render color picker
+        function renderColorPicker() {
+            const picker = document.getElementById('colorPicker');
+            picker.innerHTML = colors.map(c => `
+                <div class="color-option ${c === selectedColor ? 'selected' : ''}" 
+                     style="background: ${c}" onclick="selectColor('${c}')"></div>
+            `).join('');
+        }
+
+        // Select emoji
+        function selectEmoji(emoji) {
+            selectedEmoji = emoji;
+            renderEmojiPicker();
+        }
+
+        // Select color
+        function selectColor(color) {
+            selectedColor = color;
+            renderColorPicker();
+        }
+
+        // Save new event
+        function saveEvent() {
+            const name = document.getElementById('eventName').value.trim();
+            const source = document.getElementById('eventSource').value.trim().toLowerCase().replace(/\s+/g, '-');
+
+            if (!name || !source) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const events = loadEvents();
+            events.push({
+                id: source,
+                name: name,
+                emoji: selectedEmoji,
+                color: selectedColor,
+                context: 'manual'
+            });
+            saveEvents(events);
+            closeModal();
+            render();
+        }
+
+        // Log an event
         function log(source, context) {
+            if (isEditing) return;
             if (navigator.vibrate) navigator.vibrate(50);
+
             fetch('/api/contributions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify([{ source, context, timestamp: new Date().toISOString(), metadata: { device: 'mobile' } }])
-            }).then(r => { if (r.ok) toast(); }).catch(() => alert('Connection error'));
+                body: JSON.stringify([{
+                    source,
+                    context,
+                    timestamp: new Date().toISOString(),
+                    metadata: { device: 'mobile', manual: true }
+                }])
+            }).then(r => {
+                if (r.ok) toast();
+            }).catch(() => alert('Connection error'));
         }
+
+        // Show toast
         function toast() {
             const t = document.getElementById('toast');
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+            setTimeout(() => t.classList.remove('show'), 2000);
         }
+
+        // Initialize
+        render();
+        syncWithServer();
     </script>
 </body>
 

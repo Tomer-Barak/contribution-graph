@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -100,6 +101,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		// Prevent caching of API responses for faster year switching
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -190,13 +193,23 @@ func handleGetContributions(w http.ResponseWriter, r *http.Request) {
 		year = fmt.Sprintf("%d", time.Now().Year())
 	}
 
-	// Build query - use substr for year filtering (works with ISO timestamps)
+	// Parse year for range-based filtering (much faster than substr)
+	yearInt, err := fmt.Sscanf(year, "%d", new(int))
+	if err != nil || yearInt != 1 {
+		http.Error(w, "Invalid year parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Build query using range-based filtering for better index usage
+	startDate := year + "-01-01"
+	endDate := fmt.Sprintf("%d-01-01", mustAtoi(year)+1)
+
 	query := `
 		SELECT source, context, timestamp, metadata 
 		FROM events 
-		WHERE substr(timestamp, 1, 4) = ?
+		WHERE timestamp >= ? AND timestamp < ?
 	`
-	args := []interface{}{year}
+	args := []interface{}{startDate, endDate}
 
 	if source != "" {
 		query += " AND source = ?"
@@ -320,4 +333,13 @@ func calculateStreak() int {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// mustAtoi converts string to int, panics on error (for validated input)
+func mustAtoi(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return n
 }
